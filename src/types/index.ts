@@ -1,146 +1,162 @@
-import type { User, Profile, Section, SectionType, UserRole, UserPlan } from "@prisma/client";
+export type OAuthProvider = 'github' | 'microsoft' | 'google';
 
-// ─── Re-exports from Prisma ───────────────────────────────────────────────────
-export type { SectionType, UserRole, UserPlan };
-
-// ─── Extended types ───────────────────────────────────────────────────────────
-
-export type UserWithProfile = User & {
-  profile: Profile | null;
-};
-
-export type ProfileWithSections = Profile & {
-  sections: Section[];
-  user: Pick<User, "id" | "name" | "email" | "image" | "username">;
-};
-
-export type SectionWithMetadata = Section & {
-  metadata: SectionMetadata | null;
-};
-
-// ─── Section types ────────────────────────────────────────────────────────────
-
-export interface SectionMetadata {
-  icon?: string;
-  color?: string;
-  columns?: number;
-  layout?: "list" | "grid" | "timeline";
-  showDates?: boolean;
-}
-
-export interface SectionFormData {
-  title: string;
-  content: string;
-  isVisible: boolean;
-  type: SectionType;
-  order: number;
-  metadata?: SectionMetadata;
-}
-
-// ─── Theme types ──────────────────────────────────────────────────────────────
+export type SectionType =
+  | 'readme_overview'
+  | 'work_experience'
+  | 'education'
+  | 'tech_stack'
+  | 'projects'
+  | 'languages_cefr'
+  | 'certifications'
+  | 'publications'
+  | 'custom';
 
 export type ThemeId =
-  | "default"
-  | "dark"
-  | "ocean"
-  | "terminal"
-  | "minimal"
-  | "glass"
-  | "sunset"
-  | "forest";
+  | 'obsidian-slate'
+  | 'paper-editorial'
+  | 'github-dark'
+  | 'github-light'
+  | 'europass-swiss'
+  | 'nordic-frost'
+  | 'brutalist-mono'
+  | 'solarized-vellum';
 
-export type FontId =
-  | "inter"
-  | "mono"
-  | "poppins"
-  | "serif"
-  | "fira";
+export type FontPairingId =
+  | 'jakarta-jetbrains'
+  | 'syne-jakarta'
+  | 'instrument-jakarta'
+  | 'jetbrains-mono';
 
-export type LayoutId = "sidebar" | "centered" | "columns";
+export type LayoutMode = 'split-cv' | 'readme-stream' | 'bento-portfolio';
 
-export interface ThemeConfig {
+export type DensityMode = 'compact' | 'comfortable' | 'spacious';
+
+export type AvailabilityStatus = 'open_to_work' | 'consulting' | 'hiring' | 'focused';
+
+export interface ProfileSection {
+  id: string;
+  type: SectionType;
+  title: string;
+  subtitle?: string;
+  content: string; // Markdown + Europass syntax
+  order: number;
+  isVisible: boolean;
+  span?: 'full' | 'half';
+  updatedAt: string;
+}
+
+export interface EndorsementItem {
+  skill: string;
+  category: 'Architecture' | 'Backend' | 'Frontend' | 'Cloud & DevOps' | 'AI & Data' | 'Security';
+  count: number;
+  endorsedByUsernames: string[];
+}
+
+export interface RecommendationComment {
+  id: string;
+  authorUsername: string;
+  authorName: string;
+  authorRole: string;
+  authorAvatar: string;
+  relation: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface SocialLinks {
+  github?: string;
+  microsoft?: string;
+  google?: string;
+  linkedin?: string;
+  website?: string;
+  email?: string;
+  orcid?: string;
+}
+
+export interface EuropassPersonalMeta {
+  nationality?: string;
+  workPermit?: string;
+  drivingLicense?: string;
+  preferredContract?: string;
+  yearsOfExperience: number;
+  europassPassportId: string;
+}
+
+export interface AnalyticsReferrer {
+  source: string;
+  visits: number;
+  conversionRate: string;
+}
+
+export interface ProfileAnalytics {
+  totalViews: number;
+  uniqueVisitors30d: number;
+  staticHtmlDownloads: number;
+  pdfExports: number;
+  readmeClones: number;
+  avgReadTimeSeconds: number;
+  referrers: AnalyticsReferrer[];
+}
+
+export interface UserProfile {
+  id: string;
+  username: string; // handle: accessible via /@username & /u/username
+  displayName: string;
+  headline: string;
+  roleCategory: 'Full-Stack' | 'Systems & SRE' | 'AI & Distributed' | 'Design Systems';
+  bio: string;
+  location: string;
+  timezone: string;
+  company: string;
+  avatarUrl: string;
+  availability: AvailabilityStatus;
+  verifiedProviders: OAuthProvider[];
+  primaryProvider: OAuthProvider;
+  primaryStack: string[];
+  themeId: ThemeId;
+  fontPairingId: FontPairingId;
+  layoutMode: LayoutMode;
+  densityMode: DensityMode;
+  showEuropassHeader: boolean;
+  showTableOfContents: boolean;
+  customCss: string;
+  isPublished: boolean;
+  lastPublishedAt: string;
+  staticBuildHash: string;
+  staticBundleSizeKb: number;
+  followersCount: number;
+  followingUsernames: string[];
+  sections: ProfileSection[];
+  endorsements: EndorsementItem[];
+  recommendations: RecommendationComment[];
+  socialLinks: SocialLinks;
+  europassMeta: EuropassPersonalMeta;
+  analytics: ProfileAnalytics;
+}
+
+export interface ThemeDefinition {
   id: ThemeId;
   name: string;
+  category: 'Dark' | 'Light' | 'Editorial';
   description: string;
-  preview: string; // CSS gradient or color for preview swatch
-  isDark: boolean;
-  vars: Record<string, string>;
+  bgCanvas: string;
+  bgSurface: string;
+  bgElevated: string;
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  borderSubtle: string;
+  accentPrimary: string;
+  accentText: string;
+  codeBg: string;
 }
 
-export interface FontConfig {
-  id: FontId;
+export interface FontPairingDefinition {
+  id: FontPairingId;
   name: string;
-  family: string;
-  googleFont?: string;
-  isMonospace: boolean;
-}
-
-// ─── Profile appearance ───────────────────────────────────────────────────────
-
-export interface ProfileAppearance {
-  theme: ThemeId;
-  font: FontId;
-  accentColor: string;
-  layout: LayoutId;
-  showAvatar: boolean;
-  showStats: boolean;
-}
-
-// ─── Editor state ─────────────────────────────────────────────────────────────
-
-export interface EditorState {
-  sections: Section[];
-  selectedSectionId: string | null;
-  appearance: ProfileAppearance;
-  isDirty: boolean;
-  isSaving: boolean;
-  lastSaved: Date | null;
-  previewMode: "editor" | "preview" | "split";
-}
-
-// ─── API response types ───────────────────────────────────────────────────────
-
-export interface ApiResponse<T = unknown> {
-  data?: T;
-  error?: string;
-  message?: string;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
-}
-
-// ─── Onboarding ───────────────────────────────────────────────────────────────
-
-export interface OnboardingFormData {
-  username: string;
-  title: string;
-  location: string;
-  website?: string;
-}
-
-// ─── Stats ────────────────────────────────────────────────────────────────────
-
-export interface UserStats {
-  views: number;
-  followers: number;
-  following: number;
-  sections: number;
-}
-
-// ─── Explore / public feed ────────────────────────────────────────────────────
-
-export interface PublicProfile {
-  username: string;
-  name: string | null;
-  image: string | null;
-  title: string | null;
-  location: string | null;
-  theme: string;
-  viewCount: number;
-  createdAt: Date;
+  description: string;
+  headingFontFamily: string;
+  bodyFontFamily: string;
+  monoFontFamily: string;
+  headingClass: string;
 }

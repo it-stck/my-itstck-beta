@@ -1,0 +1,8 @@
+{
+  "name": "ItStack",
+  "description": "Build and host professional developer portfolios and technical resumes using customizable Markdown-driven personal landing pages.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

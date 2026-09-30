@@ -1,0 +1,24 @@
+# Cloudflare Tunnel Configuration
+# Save at /etc/cloudflared/config.yml or ~/.cloudflared/config.yml
+
+tunnel: <YOUR-TUNNEL-UUID-HERE>
+credentials-file: /etc/cloudflared/<YOUR-TUNNEL-UUID-HERE>.json
+
+ingress:
+  # Public SaaS route on my.itstck.com
+  - hostname: my.itstck.com
+    service: http://localhost:3000
+    originRequest:
+      connectTimeout: 30s
+      noTLSVerify: false
+      httpHostHeader: my.itstck.com
+
+  # Wildcard subdomain support for vanity aliases (e.g. *.my.itstck.com)
+  - hostname: "*.itstck.com"
+    service: http://localhost:3000
+    originRequest:
+      connectTimeout: 30s
+      httpHostHeader: my.itstck.com
+
+  # Catch-all 404 for unmatched traffic
+  - service: http_status:404

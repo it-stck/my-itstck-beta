@@ -1,321 +1,338 @@
-import type { ThemeConfig, FontConfig, ThemeId, FontId } from "@/types";
+import { ThemeDefinition, FontPairingDefinition, SectionType } from '../types';
 
-// ─── Themes ───────────────────────────────────────────────────────────────────
-
-export const THEMES: ThemeConfig[] = [
-  {
-    id: "default",
-    name: "Light",
-    description: "Clean white background, perfect for professional CVs",
-    preview: "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)",
-    isDark: false,
-    vars: {
-      "--profile-bg": "#ffffff",
-      "--profile-surface": "#f8fafc",
-      "--profile-border": "#e2e8f0",
-      "--profile-text": "#0f172a",
-      "--profile-text-muted": "#64748b",
-      "--profile-card-bg": "#ffffff",
-      "--profile-header-bg": "#f8fafc",
-      "--profile-code-bg": "#f1f5f9",
-      "--profile-shadow": "0 1px 3px rgba(0,0,0,0.1)",
-      "--profile-section-separator": "#e2e8f0",
-    },
+export const THEMES: Record<string, ThemeDefinition> = {
+  'obsidian-slate': {
+    id: 'obsidian-slate',
+    name: 'Obsidian Slate',
+    category: 'Dark',
+    description: 'Deep slate engineering console with high-contrast cobalt blue accents.',
+    bgCanvas: '#0B0F17',
+    bgSurface: '#111827',
+    bgElevated: '#1E293B',
+    textPrimary: '#F8FAFC',
+    textSecondary: '#CBD5E1',
+    textMuted: '#64748B',
+    borderSubtle: '#1E293B',
+    accentPrimary: '#3B82F6',
+    accentText: '#60A5FA',
+    codeBg: '#090D16',
   },
-  {
-    id: "dark",
-    name: "Dark",
-    description: "Sleek dark theme for the modern developer",
-    preview: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-    isDark: true,
-    vars: {
-      "--profile-bg": "#0f172a",
-      "--profile-surface": "#1e293b",
-      "--profile-border": "#334155",
-      "--profile-text": "#f1f5f9",
-      "--profile-text-muted": "#94a3b8",
-      "--profile-card-bg": "#1e293b",
-      "--profile-header-bg": "#0f172a",
-      "--profile-code-bg": "#0d1117",
-      "--profile-shadow": "0 1px 3px rgba(0,0,0,0.5)",
-      "--profile-section-separator": "#334155",
-    },
+  'paper-editorial': {
+    id: 'paper-editorial',
+    name: 'Paper Editorial',
+    category: 'Editorial',
+    description: 'Warm archival paper inspired by academic papers and Swiss technical briefs.',
+    bgCanvas: '#FAF9F5',
+    bgSurface: '#F3F1EA',
+    bgElevated: '#EAE7DC',
+    textPrimary: '#141413',
+    textSecondary: '#3F3E3A',
+    textMuted: '#78756E',
+    borderSubtle: '#E2DFD5',
+    accentPrimary: '#DC2626',
+    accentText: '#B91C1C',
+    codeBg: '#EFECE4',
   },
-  {
-    id: "ocean",
-    name: "Ocean",
-    description: "Deep blue tones inspired by the sea",
-    preview: "linear-gradient(135deg, #0c1a2e 0%, #1a3a5c 100%)",
-    isDark: true,
-    vars: {
-      "--profile-bg": "#0c1a2e",
-      "--profile-surface": "#162436",
-      "--profile-border": "#1e3a5f",
-      "--profile-text": "#e2eeff",
-      "--profile-text-muted": "#7fa8d4",
-      "--profile-card-bg": "#162436",
-      "--profile-header-bg": "#0c1a2e",
-      "--profile-code-bg": "#0a1520",
-      "--profile-shadow": "0 2px 8px rgba(0,40,100,0.4)",
-      "--profile-section-separator": "#1e3a5f",
-    },
+  'github-dark': {
+    id: 'github-dark',
+    name: 'Primer Dark (README)',
+    category: 'Dark',
+    description: 'Native GitHub Dark default aesthetics for seamless repository parity.',
+    bgCanvas: '#0D1117',
+    bgSurface: '#161B22',
+    bgElevated: '#21262D',
+    textPrimary: '#E6EDF3',
+    textSecondary: '#9198A1',
+    textMuted: '#6E7681',
+    borderSubtle: '#30363D',
+    accentPrimary: '#2F81F7',
+    accentText: '#58A6FF',
+    codeBg: '#161B22',
   },
-  {
-    id: "terminal",
-    name: "Terminal",
-    description: "Hacker-style terminal aesthetic with green on black",
-    preview: "linear-gradient(135deg, #000000 0%, #0d1b0d 100%)",
-    isDark: true,
-    vars: {
-      "--profile-bg": "#000000",
-      "--profile-surface": "#0a0f0a",
-      "--profile-border": "#1a3d1a",
-      "--profile-text": "#00ff41",
-      "--profile-text-muted": "#00a828",
-      "--profile-card-bg": "#0d170d",
-      "--profile-header-bg": "#000000",
-      "--profile-code-bg": "#050f05",
-      "--profile-shadow": "0 0 20px rgba(0,255,65,0.15)",
-      "--profile-section-separator": "#1a3d1a",
-    },
+  'github-light': {
+    id: 'github-light',
+    name: 'Primer Daylight',
+    category: 'Light',
+    description: 'Crisp white surface optimized for daytime legibility and clean print export.',
+    bgCanvas: '#FFFFFF',
+    bgSurface: '#F6F8FA',
+    bgElevated: '#EAEEF2',
+    textPrimary: '#1F2328',
+    textSecondary: '#4D5562',
+    textMuted: '#656D76',
+    borderSubtle: '#D0D7DE',
+    accentPrimary: '#0969DA',
+    accentText: '#0969DA',
+    codeBg: '#F6F8FA',
   },
-  {
-    id: "minimal",
-    name: "Minimal",
-    description: "Ultra-clean minimalist design, typography-first",
-    preview: "linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)",
-    isDark: false,
-    vars: {
-      "--profile-bg": "#fafafa",
-      "--profile-surface": "#fafafa",
-      "--profile-border": "#e5e5e5",
-      "--profile-text": "#171717",
-      "--profile-text-muted": "#737373",
-      "--profile-card-bg": "#ffffff",
-      "--profile-header-bg": "#fafafa",
-      "--profile-code-bg": "#f5f5f5",
-      "--profile-shadow": "none",
-      "--profile-section-separator": "#e5e5e5",
-    },
+  'europass-swiss': {
+    id: 'europass-swiss',
+    name: 'Europass Institutional',
+    category: 'Light',
+    description: 'Standardized European curriculum with clean institutional navy structure.',
+    bgCanvas: '#F8FAFC',
+    bgSurface: '#FFFFFF',
+    bgElevated: '#F1F5F9',
+    textPrimary: '#0F172A',
+    textSecondary: '#334155',
+    textMuted: '#64748B',
+    borderSubtle: '#E2E8F0',
+    accentPrimary: '#1D4ED8',
+    accentText: '#1E40AF',
+    codeBg: '#F1F5F9',
   },
-  {
-    id: "glass",
-    name: "Glass",
-    description: "Glassmorphism with beautiful backdrop blur effects",
-    preview: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    isDark: true,
-    vars: {
-      "--profile-bg": "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-      "--profile-surface": "rgba(255,255,255,0.05)",
-      "--profile-border": "rgba(255,255,255,0.15)",
-      "--profile-text": "#ffffff",
-      "--profile-text-muted": "rgba(255,255,255,0.6)",
-      "--profile-card-bg": "rgba(255,255,255,0.08)",
-      "--profile-header-bg": "rgba(255,255,255,0.05)",
-      "--profile-code-bg": "rgba(0,0,0,0.3)",
-      "--profile-shadow": "0 8px 32px rgba(0,0,0,0.37)",
-      "--profile-section-separator": "rgba(255,255,255,0.1)",
-    },
+  'nordic-frost': {
+    id: 'nordic-frost',
+    name: 'Nordic Frost',
+    category: 'Dark',
+    description: 'Sub-zero arctic palette engineered for low eye strain during long reviews.',
+    bgCanvas: '#191D24',
+    bgSurface: '#222831',
+    bgElevated: '#2E3440',
+    textPrimary: '#ECEFF4',
+    textSecondary: '#D8DEE9',
+    textMuted: '#81A1C1',
+    borderSubtle: '#2E3440',
+    accentPrimary: '#38BDF8',
+    accentText: '#7DD3FC',
+    codeBg: '#14171D',
   },
-  {
-    id: "sunset",
-    name: "Sunset",
-    description: "Warm sunset gradient tones",
-    preview: "linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)",
-    isDark: false,
-    vars: {
-      "--profile-bg": "#fff8f0",
-      "--profile-surface": "#fff1e6",
-      "--profile-border": "#fdd5b1",
-      "--profile-text": "#2d1b00",
-      "--profile-text-muted": "#7c4a00",
-      "--profile-card-bg": "#ffffff",
-      "--profile-header-bg": "#fff8f0",
-      "--profile-code-bg": "#fef3e2",
-      "--profile-shadow": "0 2px 8px rgba(255,100,0,0.1)",
-      "--profile-section-separator": "#fdd5b1",
-    },
+  'brutalist-mono': {
+    id: 'brutalist-mono',
+    name: 'Monochrome Brutalist',
+    category: 'Dark',
+    description: 'Stark jet-black contrast with razor-thin hairline borders and amber accents.',
+    bgCanvas: '#050505',
+    bgSurface: '#0F0F10',
+    bgElevated: '#18181B',
+    textPrimary: '#F4F4F0',
+    textSecondary: '#A1A1AA',
+    textMuted: '#71717A',
+    borderSubtle: '#27272A',
+    accentPrimary: '#F59E0B',
+    accentText: '#FBBF24',
+    codeBg: '#0A0A0B',
   },
-  {
-    id: "forest",
-    name: "Forest",
-    description: "Natural earthy greens for a calm, grounded feel",
-    preview: "linear-gradient(135deg, #1a2f1a 0%, #2d4a2d 100%)",
-    isDark: true,
-    vars: {
-      "--profile-bg": "#1a2f1a",
-      "--profile-surface": "#243824",
-      "--profile-border": "#3d5e3d",
-      "--profile-text": "#d4edd4",
-      "--profile-text-muted": "#8fb48f",
-      "--profile-card-bg": "#243824",
-      "--profile-header-bg": "#1a2f1a",
-      "--profile-code-bg": "#152015",
-      "--profile-shadow": "0 2px 8px rgba(0,50,0,0.4)",
-      "--profile-section-separator": "#3d5e3d",
-    },
-  },
-];
-
-// ─── Fonts ────────────────────────────────────────────────────────────────────
-
-export const FONTS: FontConfig[] = [
-  {
-    id: "inter",
-    name: "Inter",
-    family: "'Inter', system-ui, sans-serif",
-    googleFont: "Inter:wght@300;400;500;600;700",
-    isMonospace: false,
-  },
-  {
-    id: "poppins",
-    name: "Poppins",
-    family: "'Poppins', system-ui, sans-serif",
-    googleFont: "Poppins:wght@300;400;500;600;700",
-    isMonospace: false,
-  },
-  {
-    id: "serif",
-    name: "Lora",
-    family: "'Lora', Georgia, serif",
-    googleFont: "Lora:wght@400;500;600;700",
-    isMonospace: false,
-  },
-  {
-    id: "mono",
-    name: "JetBrains Mono",
-    family: "'JetBrains Mono', 'Fira Code', monospace",
-    googleFont: "JetBrains+Mono:wght@300;400;500;600;700",
-    isMonospace: true,
-  },
-  {
-    id: "fira",
-    name: "Fira Code",
-    family: "'Fira Code', 'Courier New', monospace",
-    googleFont: "Fira+Code:wght@300;400;500;600;700",
-    isMonospace: true,
-  },
-];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-export function getTheme(id: string): ThemeConfig {
-  return THEMES.find((t) => t.id === id) ?? THEMES[0];
-}
-
-export function getFont(id: string): FontConfig {
-  return FONTS.find((f) => f.id === id) ?? FONTS[0];
-}
-
-export function buildThemeCssVars(
-  themeId: string,
-  accentColor: string,
-  fontId: string
-): string {
-  const theme = getTheme(themeId);
-  const font = getFont(fontId);
-
-  const vars = [
-    ...Object.entries(theme.vars).map(([k, v]) => `${k}: ${v}`),
-    `--profile-accent: ${accentColor}`,
-    `--profile-font: ${font.family}`,
-  ];
-
-  return vars.join("; ");
-}
-
-export function getGoogleFontsUrl(fontIds: string[]): string {
-  const fonts = fontIds
-    .map((id) => getFont(id))
-    .filter((f) => f.googleFont)
-    .map((f) => f.googleFont!);
-
-  if (!fonts.length) return "";
-
-  const families = fonts.map((f) => `family=${f}`).join("&");
-  return `https://fonts.googleapis.com/css2?${families}&display=swap`;
-}
-
-export const SECTION_TYPE_META: Record<
-  string,
-  { label: string; icon: string; description: string; defaultTitle: string }
-> = {
-  HEADER: {
-    label: "Header",
-    icon: "👤",
-    description: "Your name, title and contact info",
-    defaultTitle: "Header",
-  },
-  ABOUT: {
-    label: "About",
-    icon: "💡",
-    description: "Professional summary",
-    defaultTitle: "About Me",
-  },
-  EXPERIENCE: {
-    label: "Experience",
-    icon: "💼",
-    description: "Work history",
-    defaultTitle: "Experience",
-  },
-  EDUCATION: {
-    label: "Education",
-    icon: "🎓",
-    description: "Academic background",
-    defaultTitle: "Education",
-  },
-  SKILLS: {
-    label: "Skills",
-    icon: "🛠️",
-    description: "Technologies & tools",
-    defaultTitle: "Skills",
-  },
-  PROJECTS: {
-    label: "Projects",
-    icon: "🚀",
-    description: "Portfolio projects",
-    defaultTitle: "Projects",
-  },
-  CERTIFICATIONS: {
-    label: "Certs",
-    icon: "📜",
-    description: "Certifications & licenses",
-    defaultTitle: "Certifications",
-  },
-  LANGUAGES: {
-    label: "Languages",
-    icon: "🌍",
-    description: "Spoken languages",
-    defaultTitle: "Languages",
-  },
-  AWARDS: {
-    label: "Awards",
-    icon: "🏆",
-    description: "Achievements & awards",
-    defaultTitle: "Awards",
-  },
-  PUBLICATIONS: {
-    label: "Publications",
-    icon: "📚",
-    description: "Articles & papers",
-    defaultTitle: "Publications",
-  },
-  VOLUNTEER: {
-    label: "Volunteer",
-    icon: "❤️",
-    description: "Volunteer work",
-    defaultTitle: "Volunteer",
-  },
-  OPEN_SOURCE: {
-    label: "Open Source",
-    icon: "⚡",
-    description: "OSS contributions",
-    defaultTitle: "Open Source",
-  },
-  CUSTOM: {
-    label: "Custom",
-    icon: "✨",
-    description: "Free-form section",
-    defaultTitle: "Custom Section",
+  'solarized-vellum': {
+    id: 'solarized-vellum',
+    name: 'Solarized Vellum',
+    category: 'Editorial',
+    description: 'Precision calibrated parchment for extended technical reading.',
+    bgCanvas: '#FDF6E3',
+    bgSurface: '#EEE8D5',
+    bgElevated: '#E4DEC8',
+    textPrimary: '#073642',
+    textSecondary: '#586E75',
+    textMuted: '#839496',
+    borderSubtle: '#D8D1BA',
+    accentPrimary: '#268BD2',
+    accentText: '#1D6FA5',
+    codeBg: '#EFE9D6',
   },
 };
+
+export const FONT_PAIRINGS: Record<string, FontPairingDefinition> = {
+  'jakarta-jetbrains': {
+    id: 'jakarta-jetbrains',
+    name: 'Plus Jakarta Sans + JetBrains Mono',
+    description: 'Contemporary technical balance with high legibility across screens.',
+    headingFontFamily: "'Plus Jakarta Sans', sans-serif",
+    bodyFontFamily: "'Plus Jakarta Sans', sans-serif",
+    monoFontFamily: "'JetBrains Mono', monospace",
+    headingClass: 'font-display-jakarta tracking-tight',
+  },
+  'syne-jakarta': {
+    id: 'syne-jakarta',
+    name: 'Syne Display + Plus Jakarta Sans',
+    description: 'Bold architectural headlines paired with geometric prose.',
+    headingFontFamily: "'Syne', sans-serif",
+    bodyFontFamily: "'Plus Jakarta Sans', sans-serif",
+    monoFontFamily: "'JetBrains Mono', monospace",
+    headingClass: 'font-display-syne tracking-tight',
+  },
+  'instrument-jakarta': {
+    id: 'instrument-jakarta',
+    name: 'Instrument Serif + Plus Jakarta Sans',
+    description: 'Editorial academic aesthetic for research fellows and Staff Engineers.',
+    headingFontFamily: "'Instrument Serif', Georgia, serif",
+    bodyFontFamily: "'Plus Jakarta Sans', sans-serif",
+    monoFontFamily: "'JetBrains Mono', monospace",
+    headingClass: 'font-display-serif tracking-normal font-normal',
+  },
+  'jetbrains-mono': {
+    id: 'jetbrains-mono',
+    name: 'JetBrains Mono Full Suite',
+    description: 'Full monospace tabular environment styled like an RFC specification.',
+    headingFontFamily: "'JetBrains Mono', monospace",
+    bodyFontFamily: "'JetBrains Mono', monospace",
+    monoFontFamily: "'JetBrains Mono', monospace",
+    headingClass: 'font-display-mono tracking-tight',
+  },
+};
+
+export const SECTION_TYPE_CATALOG: Array<{
+  type: SectionType;
+  label: string;
+  europassCode: string;
+  description: string;
+  defaultTitle: string;
+  defaultSubtitle: string;
+  templateContent: string;
+}> = [
+  {
+    type: 'readme_overview',
+    label: 'README.md Overview',
+    europassCode: 'EP-01 · Executive Summary',
+    description: 'GitHub repository-style presentation with core architecture and mission context.',
+    defaultTitle: 'README.md — Executive Summary & Architecture',
+    defaultSubtitle: 'Technical profile, distributed systems design philosophy, and verified production metrics',
+    templateContent: `> [!NOTE]
+> Currently architecting low-latency distributed platforms and mission-critical cloud-native systems.
+
+### Engineering Philosophy
+
+I design resilient platforms combining **strict static typing**, end-to-end distributed tracing, and immutable delivery pipelines.
+
+| Operational Dimension | Architecture Target | Measured Production Impact |
+| :--- | :--- | :--- |
+| **Availability** | Multi-region active-active | 99.995% annual SLA |
+| **P99 Latency** | Edge termination & zero-copy cache | < 16 ms global |
+| **CI/CD Throughput** | Automated canary + instant rollback | 45+ daily verified deploys |`,
+  },
+  {
+    type: 'work_experience',
+    label: 'Work Experience (Europass)',
+    europassCode: 'EP-02 · Employment Record',
+    description: 'Chronological employment history with quantified achievements and technologies.',
+    defaultTitle: 'Work Experience',
+    defaultSubtitle: 'Verifiable track record in software architecture and technical leadership',
+    templateContent: `### Principal Systems Architect · CloudScale Europe
+**March 2023 – Present** · *Remote (Zurich / London) · Cloud Infrastructure*
+
+Technical lead for real-time telemetry and edge routing engines processing 2.4M events/sec.
+
+- Decreased compute expenditures by **36% annually** ($480k saved) by migrating bottleneck services from Node.js to **Rust** and **Go**.
+- Spearheaded company-wide zero-trust service mesh adoption with automated mTLS and OpenTelemetry distributed tracing.
+- Mentored 12 staff engineers and authored fundamental system RFCs.
+
+---
+
+### Senior Staff Full-Stack Engineer · FinTech Core
+**June 2020 – February 2023** · *Berlin, Germany · SEPA Instant Banking*
+
+- Engineered an idempotent distributed reconciliation ledger on **PostgreSQL** and **Kafka**.
+- Built client integration tooling in **TypeScript** and **React**, lowering integration times from 14 days to 4 hours.`,
+  },
+  {
+    type: 'tech_stack',
+    label: 'IT Stack & Digital Competences',
+    europassCode: 'EP-03 · Technical Competence Matrix',
+    description: 'Categorized inventory of languages, frameworks, databases, and infrastructure tools.',
+    defaultTitle: 'IT Stack & Technical Ecosystem',
+    defaultSubtitle: 'Production technologies grouped by architectural layer and operational maturity',
+    templateContent: `| System Layer | Core Technologies | Level / Experience | Production Use Case |
+| :--- | :--- | :--- | :--- |
+| **Systems Languages** | TypeScript, Rust, Go, SQL, Python | Expert (10+ yrs) | Low-latency daemons, typed APIs, distributed consensus |
+| **Frontend & UI** | React 19, Tailwind CSS, Vite, WebAssembly | Expert (8+ yrs) | Real-time consoles, markdown studios, SSG compilers |
+| **Data & Storage** | PostgreSQL 17, Redis, ClickHouse, Kafka | Expert (7+ yrs) | Log partitioning, CQRS pipelines, columnar analytics |
+| **Infra & DevOps** | Kubernetes, Docker, Terraform, Linux, eBPF | Advanced (7+ yrs) | GitOps pipelines, kernel packet filtering, mTLS mesh |`,
+  },
+  {
+    type: 'projects',
+    label: 'Projects & Open Source Portfolio',
+    europassCode: 'EP-04 · Open Source & Work Portfolio',
+    description: 'Featured production software, open-source repositories, and technical case studies.',
+    defaultTitle: 'Featured Projects & Open Source',
+    defaultSubtitle: 'Production software, public libraries, and architectural case studies',
+    templateContent: `### 01. HyperEdge KV — Distributed In-Memory Cache in Rust
+**Repository:** \`github.com/alexturner/hyperedge-kv\` · **License:** Apache-2.0 · **Stars:** 3,120+
+
+High-throughput key-value engine with Redis protocol compatibility and asynchronous WAL persistence via \`io_uring\`.
+
+\`\`\`rust
+pub async fn replicate_frame(node: &ClusterNode, payload: &[u8]) -> Result<AckMetrics, EdgeError> {
+    let digest = blake3::hash(payload);
+    node.broadcast_quorum(digest.as_bytes(), payload).await
+}
+\`\`\`
+
+---
+
+### 02. ItStack Static Engine (\`my.itstck.com\`)
+**Canonical Route:** \`my.itstck.com/@alexturner\` · **Stack:** TypeScript, React 19, Express, SSG
+
+Zero-dependency compiler that outputs 11 KB standalone HTML5 documents with inline critical styles and JSON-LD structured data.`,
+  },
+  {
+    type: 'education',
+    label: 'Education & Qualifications (Europass)',
+    europassCode: 'EP-05 · EQF Qualifications',
+    description: 'University degrees, European Qualifications Framework (EQF) levels, and thesis work.',
+    defaultTitle: 'Education and Academic Training',
+    defaultSubtitle: 'Official degrees classified under the European Qualifications Framework (EQF)',
+    templateContent: `### M.Sc. in Distributed Computing & High Performance Systems
+**2016 – 2018** · *Technical University of Munich (TUM)* · **EQF Level:** Level 7 (Master)
+
+- **Master Thesis:** *Adaptive Raft Consensus over Geo-Distributed Networks with Asymmetric Latency* (Grade: 1.0 with Distinction).
+- **Core Topics:** Distributed algorithms, compiler design, applied cryptography, operating system internals.
+
+---
+
+### B.Sc. in Computer Science
+**2012 – 2016** · *University of Edinburgh* · **EQF Level:** Level 6 (Bachelor)
+
+- First Class Honours in Software Engineering and Computer Architecture.`,
+  },
+  {
+    type: 'languages_cefr',
+    label: 'Languages (CEFR Europass A1–C2)',
+    europassCode: 'EP-06 · European Language Passport',
+    description: 'Standardized Common European Framework of Reference for Languages matrix.',
+    defaultTitle: 'Language Competences (CEFR Framework)',
+    defaultSubtitle: 'Common European Framework of Reference for Languages (A1 · A2 · B1 · B2 · C1 · C2)',
+    templateContent: `| Language | Listening | Reading | Spoken Interaction | Spoken Production | Writing | Certification |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **English** | C2 · Native | C2 · Native | C2 · Native | C2 · Native | C2 · Native | Mother Tongue |
+| **German** | C1 | C1 | C1 | B2 | C1 | Goethe-Zertifikat C1 |
+| **Spanish** | B2 | B2 | B1 | B1 | B1 | DELE Intermedio B2 |`,
+  },
+  {
+    type: 'certifications',
+    label: 'Certifications & Accreditations',
+    europassCode: 'EP-07 · Technical Certifications',
+    description: 'Verifiable credentials from standards bodies and cloud providers.',
+    defaultTitle: 'Certifications & Technical Accreditations',
+    defaultSubtitle: 'Industry credentials verifiable through official registry IDs',
+    templateContent: `| Certification | Issuing Organization | Validity Period | Verification ID |
+| :--- | :--- | :--- | :--- |
+| **Certified Kubernetes Security Specialist (CKS)** | CNCF / Linux Foundation | 2024 – 2027 | \`LF-CKS-9941-882\` |
+| **AWS Solutions Architect – Professional** | Amazon Web Services | 2023 – 2026 | \`AWS-SAP-441092\` |
+| **CISSP – Certified Information Systems Security** | (ISC)² | Active | \`CISSP-773190\` |`,
+  },
+  {
+    type: 'publications',
+    label: 'Publications & Speaking',
+    europassCode: 'EP-08 · Scientific Outreach',
+    description: 'Conference talks, peer-reviewed papers, book chapters, and engineering RFCs.',
+    defaultTitle: 'Technical Publications & Conference Talks',
+    defaultSubtitle: 'Peer-reviewed articles, international talks, and architectural documentation',
+    templateContent: `- **KubeCon Europe Keynote (2025):** *"Eliminating Cold-Starts in Multi-Tenant WebAssembly Workloads on Bare-Metal Nerves"*.
+- **ACM Queue Paper (2024):** *"Deterministic Simulation Testing for Distributed Financial Ledgers in Rust and TypeScript"*.
+- **Author:** *Designing Resilient Idempotent Systems in Production* (Read by 50,000+ engineers).`,
+  },
+  {
+    type: 'custom',
+    label: 'Custom Markdown Section',
+    europassCode: 'EP-09 · Flexible Block',
+    description: 'Freeform section supporting custom markdown, tables, diagrams, and callouts.',
+    defaultTitle: 'Work Principles & Advisory Terms',
+    defaultSubtitle: 'Operating guidelines, consulting availability, and collaboration criteria',
+    templateContent: `> [!TIP]
+> Open for architecture reviews, technical diligence for VC funds, and fractional Staff Engineer advisory.
+
+### Core Operating Tenets
+
+1. **Verifiable Simplicity:** A design is complete not when nothing more can be added, but when no dependency can be removed without compromising security.
+2. **Docs as Code:** Every critical system architecture decision is recorded in version-controlled Markdown right next to the source.`,
+  },
+];

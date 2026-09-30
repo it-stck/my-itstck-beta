@@ -1,0 +1,6 @@
+node_modules
+dist
+data/itstck-store.json
+.env
+.DS_Store
+*.log

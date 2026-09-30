@@ -38,11 +38,12 @@ systemctl restart itstack
 
 echo ">>> [6/6] Verifying service health on port 3000..."
 sleep 3
-if curl -s http://127.0.0.1:3000/api/profiles | grep -q "alexturner"; then
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/profiles || echo "000")
+if [ "$HTTP_STATUS" = "200" ]; then
     echo "==================================================================="
     echo " SUCCESS: ItStack is running and healthy on http://127.0.0.1:3000"
     echo " Next step: Configure your Cloudflare Tunnel to expose my.itstck.com"
     echo "==================================================================="
 else
-    echo "WARNING: Health check pending. Check logs with: journalctl -u itstack -f"
+    echo "WARNING: Health check pending (HTTP $HTTP_STATUS). Check logs with: journalctl -u itstack -f"
 fi

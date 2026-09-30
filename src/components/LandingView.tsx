@@ -4,6 +4,7 @@ import {
   Check,
   Code2,
   FileCode,
+  Github,
   Globe,
   Layers,
   Palette,
@@ -17,7 +18,7 @@ import { AppView } from './Navbar';
 
 interface LandingViewProps {
   profiles: UserProfile[];
-  currentUser: UserProfile;
+  currentUser: UserProfile | null;
   onNavigate: (view: AppView, username?: string) => void;
   onOpenAuthModal: () => void;
   onOpenSsgModal: () => void;
@@ -30,7 +31,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
   onOpenAuthModal,
   onOpenSsgModal,
 }) => {
-  const [claimHandle, setClaimHandle] = useState('your_handle');
+  const [claimHandle, setClaimHandle] = useState('');
   const [previewThemeId, setPreviewThemeId] = useState<string>('obsidian-slate');
 
   const demoTheme = THEMES[previewThemeId] || THEMES['obsidian-slate'];
@@ -47,8 +48,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Column */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="text-xs font-mono text-blue-400 tracking-wide">
-              my.itstck.com · Technical Developer Network &amp; Static Resume Engine
+            <div className="text-xs font-mono text-blue-400 tracking-wide flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>my.itstck.com · Verified GitHub Developer Portfolios</span>
             </div>
 
             <h1
@@ -59,7 +61,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </h1>
 
             <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl">
-              Connect via <strong>GitHub</strong>, <strong>Microsoft</strong>, or <strong>Google</strong>. Craft your portfolio in structured Markdown blocks, switch themes and typography pairings in real time, and publish ultra-fast static HTML pages to <code className="text-blue-400 font-mono">my.itstck.com/@user</code> or <code className="text-blue-400 font-mono">/u/user</code>.
+              Authenticate via <strong>GitHub</strong>. Author your technical experience and portfolio in modular Markdown blocks, select curated visual themes, and publish an autonomous static HTML page at <code className="text-blue-400 font-mono">my.itstck.com/@user</code> or <code className="text-blue-400 font-mono">/u/user</code>.
             </p>
 
             {/* Handle Claim Form */}
@@ -77,6 +79,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   onChange={(e) =>
                     setClaimHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))
                   }
+                  placeholder="your-github-username"
                   aria-label="Claim your username handle"
                   className="bg-transparent font-mono text-xs sm:text-sm text-white font-semibold focus:outline-none flex-1"
                 />
@@ -84,30 +87,45 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
               <button
                 type="submit"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-sm font-semibold text-white transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-sm font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
               >
-                <span>Claim Your Page Free</span>
+                <Github className="w-4 h-4" />
+                <span>Claim Page via GitHub</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
 
             {/* Action Links */}
             <div className="pt-2 flex flex-wrap items-center gap-6 text-xs font-mono text-slate-400">
-              <button
-                type="button"
-                onClick={() => onNavigate('editor')}
-                className="text-slate-200 hover:text-blue-400 underline underline-offset-4 cursor-pointer"
-              >
-                Launch Studio Editor →
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate('profile', currentUser.username)}
-                className="text-slate-200 hover:text-blue-400 underline underline-offset-4 cursor-pointer"
-              >
-                Live Preview: my.itstck.com/@{currentUser.username} →
-              </button>
-              <span>Verified SSO: GitHub · Microsoft · Google</span>
+              {currentUser ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('editor')}
+                    className="text-slate-200 hover:text-blue-400 underline underline-offset-4 cursor-pointer"
+                  >
+                    Open Your Studio Editor →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('profile', currentUser.username)}
+                    className="text-slate-200 hover:text-blue-400 underline underline-offset-4 cursor-pointer"
+                  >
+                    View Your Page (/@{currentUser.username}) →
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={onOpenAuthModal}
+                    className="text-slate-200 hover:text-blue-400 underline underline-offset-4 cursor-pointer"
+                  >
+                    Sign In with GitHub →
+                  </button>
+                  <span>1 GitHub Account = 1 Verified Portfolio</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -138,7 +156,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             >
               <div className="flex items-center justify-between gap-2">
                 <span style={{ color: demoTheme.accentText }} className="font-mono text-xs font-semibold">
-                  my.itstck.com/@{currentUser.username}
+                  my.itstck.com/@{currentUser?.username || 'developer'}
                 </span>
                 <div className="flex items-center gap-1.5">
                   {(['obsidian-slate', 'paper-editorial', 'github-dark', 'europass-swiss'] as const).map((tId) => {
@@ -161,9 +179,11 @@ export const LandingView: React.FC<LandingViewProps> = ({
               </div>
 
               <div>
-                <div className="text-base font-bold">{currentUser.displayName}</div>
+                <div className="text-base font-bold">
+                  {currentUser?.displayName || 'Principal Distributed Systems Engineer'}
+                </div>
                 <div style={{ color: demoTheme.textSecondary }} className="text-xs">
-                  {currentUser.headline}
+                  {currentUser?.headline || 'High-throughput SaaS & Cloud Architecture'}
                 </div>
               </div>
 
@@ -178,9 +198,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 <div style={{ color: demoTheme.textPrimary }} className="font-semibold">
                   01. README.md &amp; Europass Passport
                 </div>
-                <div>Stack: {currentUser.primaryStack.slice(0, 5).join(' · ')}</div>
+                <div>Stack: TypeScript · Rust · PostgreSQL 16 · Docker · Linux</div>
                 <div style={{ color: demoTheme.accentText }}>
-                  Active Theme: {demoTheme.name} · Route: /@{currentUser.username}
+                  Active Theme: {demoTheme.name}
                 </div>
               </div>
             </div>
@@ -241,137 +261,32 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
           <div className="p-7 rounded-2xl border border-slate-800 bg-[#111827] space-y-3">
             <div className="flex items-center justify-between text-xs font-mono text-blue-400">
-              <span>04. Technical Social Network &amp; Endorsements</span>
+              <span>04. GitHub Identity &amp; Strict Profile Ownership</span>
               <ShieldCheck className="w-4 h-4" />
             </div>
             <h3 className="text-xl font-bold text-white">
-              Verified identity via GitHub, Microsoft &amp; Google
+              One GitHub Account = One Verified Profile
             </h3>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Authenticate via OAuth SSO, receive peer skill endorsements, publish verified technical references, and fork profile templates from staff architects with a single click.
+              Authenticate via GitHub OAuth. Each user strictly edits only their own page. Profiles can be modified, re-compiled, exported, or permanently deleted at any time with full data control.
             </p>
           </div>
         </div>
       </section>
 
-      {/* 3. Quantitative Proof Strip & Featured Profiles */}
-      <section className="max-w-[1280px] mx-auto px-6 py-20 border-b border-slate-800/80 space-y-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <div className="text-xs font-mono text-blue-400 mb-2">
-              Audited Production Proof &amp; Live Profiles
-            </div>
-            <h2 className="font-display-syne text-3xl font-bold text-white tracking-tight">
-              Verified engineers hosting portfolios on ItStack
-            </h2>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onNavigate('explore')}
-            className="inline-flex items-center gap-2 text-xs font-mono text-blue-400 hover:underline cursor-pointer"
-          >
-            <span>Browse All Profiles ({profiles.length})</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="p-6 rounded-xl border border-slate-800 bg-[#0F172A]/60">
-            <div className="text-2xl sm:text-3xl font-bold text-white font-mono tabular-nums">
-              &lt; 12.0 KB
-            </div>
-            <div className="text-xs font-semibold text-slate-200 mt-1">
-              Average compiled HTML5 bundle weight
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Instant global load in sub-15ms with inline critical CSS and JSON-LD metadata.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-xl border border-slate-800 bg-[#0F172A]/60">
-            <div className="text-2xl sm:text-3xl font-bold text-white font-mono tabular-nums">
-              100% Parity
-            </div>
-            <div className="text-xs font-semibold text-slate-200 mt-1">
-              Dual Export: GitHub README + Europass CV
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              One single Markdown source powers both your GitHub profile repository and your CV.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-xl border border-slate-800 bg-[#0F172A]/60">
-            <div className="text-2xl sm:text-3xl font-bold text-white font-mono tabular-nums">
-              3 OAuth Providers
-            </div>
-            <div className="text-xs font-semibold text-slate-200 mt-1">
-              GitHub, Microsoft Entra ID &amp; Google
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Cryptographically verified accounts for peer endorsements and verified references.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {profiles.slice(0, 4).map((prof) => (
-            <div
-              key={prof.id}
-              onClick={() => onNavigate('profile', prof.username)}
-              className="p-5 rounded-xl border border-slate-800 bg-[#111827] hover:border-blue-500/60 transition-colors cursor-pointer flex flex-col justify-between space-y-4"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <ResilientImage
-                    src={prof.avatarUrl}
-                    alt={prof.displayName}
-                    className="w-12 h-12 rounded-xl object-cover border border-slate-700 shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <div className="text-xs font-mono text-blue-400 truncate">
-                      /@{prof.username}
-                    </div>
-                    <div className="text-sm font-bold text-white truncate">
-                      {prof.displayName}
-                    </div>
-                    <div className="text-[11px] text-slate-400 truncate">
-                      {prof.location}
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-300 font-medium line-clamp-2">
-                  {prof.headline}
-                </p>
-
-                <div className="text-[11px] font-mono text-slate-400 truncate">
-                  {prof.primaryStack.slice(0, 4).join(' · ')}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
-                <span>Theme: {THEMES[prof.themeId]?.name}</span>
-                <span className="text-blue-400">View Page →</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 4. Action Section */}
+      {/* 3. Action Section */}
       <section className="max-w-[1280px] mx-auto px-6 py-20">
         <div className="p-8 sm:p-12 rounded-2xl border border-slate-800 bg-[#111827] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
           <div className="space-y-2 max-w-2xl">
             <div className="text-xs font-mono text-emerald-400 flex items-center gap-1.5">
               <Check className="w-4 h-4" />
-              <span>Production-Ready Self-Hostable SaaS Platform</span>
+              <span>Production-Ready SaaS with PostgreSQL &amp; Cloudflare Tunnel</span>
             </div>
             <h2 className="font-display-syne text-2xl sm:text-3xl font-bold text-white">
-              Host your own developer landing page on my.itstck.com
+              Host your verified technical curriculum on my.itstck.com
             </h2>
             <p className="text-sm text-slate-400">
-              Try the live web studio editor now with full Markdown support, real-time theme previews, and instant static HTML compilation.
+              Sign in with your GitHub account now to initialize your portfolio, format your experience in Markdown, and compile your static landing page.
             </p>
           </div>
 
@@ -386,17 +301,17 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('editor')}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs sm:text-sm font-semibold text-white cursor-pointer whitespace-nowrap"
+              onClick={currentUser ? () => onNavigate('editor') : onOpenAuthModal}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
             >
-              <Globe className="w-4 h-4" />
-              <span>Launch Studio Editor</span>
+              <Github className="w-4 h-4" />
+              <span>{currentUser ? 'Open Studio Editor' : 'Sign in with GitHub'}</span>
             </button>
           </div>
         </div>
       </section>
 
-      {/* 5. Quiet Footer */}
+      {/* 4. Footer */}
       <footer className="border-t border-slate-800/80 py-8 px-6 text-xs text-slate-500 font-mono">
         <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
@@ -412,13 +327,6 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('editor')}
-              className="hover:text-slate-300 cursor-pointer"
-            >
-              Markdown Editor
-            </button>
-            <button
-              type="button"
               onClick={onOpenSsgModal}
               className="hover:text-slate-300 cursor-pointer"
             >
@@ -426,10 +334,10 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </button>
             <button
               type="button"
-              onClick={onOpenAuthModal}
+              onClick={currentUser ? () => onNavigate('dashboard') : onOpenAuthModal}
               className="hover:text-slate-300 cursor-pointer"
             >
-              OAuth SSO
+              {currentUser ? 'Account Settings' : 'GitHub Sign In'}
             </button>
           </div>
         </div>

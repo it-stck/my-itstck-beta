@@ -1,4 +1,4 @@
-export type OAuthProvider = 'github' | 'microsoft' | 'google';
+export type OAuthProvider = 'github';
 
 export type SectionType =
   | 'readme_overview'
@@ -65,8 +65,6 @@ export interface RecommendationComment {
 
 export interface SocialLinks {
   github?: string;
-  microsoft?: string;
-  google?: string;
   linkedin?: string;
   website?: string;
   email?: string;
@@ -100,7 +98,9 @@ export interface ProfileAnalytics {
 
 export interface UserProfile {
   id: string;
-  username: string; // handle: accessible via /@username & /u/username
+  githubId: string; // Unique GitHub Account ID (Enforces: 1 GitHub Account = 1 Profile)
+  githubUsername: string; // Verified GitHub handle
+  username: string; // ItStack handle: accessible via /@username & /u/username
   displayName: string;
   headline: string;
   roleCategory: 'Full-Stack' | 'Systems & SRE' | 'AI & Distributed' | 'Design Systems';
@@ -132,6 +132,11 @@ export interface UserProfile {
   socialLinks: SocialLinks;
   europassMeta: EuropassPersonalMeta;
   analytics: ProfileAnalytics;
+}
+
+export interface AuthSession {
+  token: string;
+  profile: UserProfile;
 }
 
 export interface ThemeDefinition {

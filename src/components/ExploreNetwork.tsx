@@ -6,6 +6,8 @@ import {
   ThumbsUp,
   UserCheck,
   UserPlus,
+  Github,
+  Sparkles,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { THEMES } from '../lib/themes';
@@ -13,11 +15,12 @@ import { ResilientImage } from './ResilientImage';
 
 interface ExploreNetworkProps {
   profiles: UserProfile[];
-  currentUser: UserProfile;
+  currentUser: UserProfile | null;
   onSelectProfile: (username: string) => void;
   onToggleFollow: (targetUsername: string) => void;
   onEndorseSkill: (targetUsername: string, skill: string) => void;
   onForkTemplate: (sourceProfile: UserProfile) => void;
+  onOpenAuthModal: () => void;
 }
 
 export const ExploreNetwork: React.FC<ExploreNetworkProps> = ({
@@ -27,6 +30,7 @@ export const ExploreNetwork: React.FC<ExploreNetworkProps> = ({
   onToggleFollow,
   onEndorseSkill,
   onForkTemplate,
+  onOpenAuthModal,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -75,7 +79,7 @@ export const ExploreNetwork: React.FC<ExploreNetworkProps> = ({
               Explore Verified Engineer Portfolios &amp; Stacks
             </h1>
             <p className="text-sm text-slate-400 mt-2 max-w-2xl">
-              Discover software architects and engineers verified via GitHub, Microsoft, and Google. Endorse skills, review technical references, or fork page structures into your own portfolio.
+              Discover software architects and engineers verified via GitHub. Endorse skills, review technical references, or fork page structures into your own portfolio.
             </p>
           </div>
 
@@ -85,60 +89,84 @@ export const ExploreNetwork: React.FC<ExploreNetworkProps> = ({
           </div>
         </div>
 
-        {/* Filter Controls */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by @username, name, city, or tech (e.g. Rust, TypeScript, eBPF, PostgreSQL)..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#111827] border border-slate-800 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
-            />
-          </div>
+        {/* Filter Controls (Only if there are profiles) */}
+        {profiles.length > 0 && (
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by @username, name, city, or tech (e.g. Rust, TypeScript, eBPF, PostgreSQL)..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#111827] border border-slate-800 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
 
-          <div className="flex flex-wrap items-center gap-1 p-1 bg-[#111827] rounded-xl border border-slate-800">
-            {[
-              { id: 'all', label: 'All Disciplines' },
-              { id: 'Full-Stack', label: 'Full-Stack' },
-              { id: 'Systems & SRE', label: 'Systems & SRE' },
-              { id: 'AI & Distributed', label: 'AI & Distributed' },
-              { id: 'Design Systems', label: 'Design Systems' },
-            ].map((tab) => (
+            <div className="flex flex-wrap items-center gap-1 p-1 bg-[#111827] rounded-xl border border-slate-800">
+              {[
+                { id: 'all', label: 'All Disciplines' },
+                { id: 'Full-Stack', label: 'Full-Stack' },
+                { id: 'Systems & SRE', label: 'Systems & SRE' },
+                { id: 'AI & Distributed', label: 'AI & Distributed' },
+                { id: 'Design Systems', label: 'Design Systems' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setRoleFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                    roleFilter === tab.id
+                      ? 'bg-blue-600 text-white'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <select
+              aria-label="Filter by availability"
+              value={availabilityFilter}
+              onChange={(e) => setAvailabilityFilter(e.target.value)}
+              className="px-3.5 py-2.5 rounded-xl bg-[#111827] border border-slate-800 text-xs text-slate-200 cursor-pointer"
+            >
+              <option value="all">Any Availability</option>
+              <option value="open_to_work">Available for Staff/Principal</option>
+              <option value="consulting">Open to Consulting</option>
+              <option value="focused">Focused on Current Work</option>
+            </select>
+          </div>
+        )}
+
+        {/* Empty State vs Profile Grid */}
+        {profiles.length === 0 ? (
+          <div className="p-16 rounded-2xl border border-slate-800 bg-[#111827]/60 text-center space-y-4 max-w-2xl mx-auto my-12">
+            <div className="w-12 h-12 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mx-auto">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h2 className="text-xl font-bold text-white font-display-syne">
+              No developer portfolios published yet
+            </h2>
+            <p className="text-sm text-slate-400 leading-relaxed max-w-md mx-auto">
+              Be the first engineer to claim your handle, build your Europass CV in Markdown, and launch your static landing page at <code className="text-blue-400 font-mono">my.itstck.com/@your_name</code>.
+            </p>
+            <div className="pt-2">
               <button
-                key={tab.id}
                 type="button"
-                onClick={() => setRoleFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
-                  roleFilter === tab.id
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                onClick={onOpenAuthModal}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 transition-colors cursor-pointer"
               >
-                {tab.label}
+                <Github className="w-4 h-4" />
+                <span>Sign in with GitHub &amp; Create Your Page</span>
               </button>
-            ))}
+            </div>
           </div>
-
-          <select
-            aria-label="Filter by availability"
-            value={availabilityFilter}
-            onChange={(e) => setAvailabilityFilter(e.target.value)}
-            className="px-3.5 py-2.5 rounded-xl bg-[#111827] border border-slate-800 text-xs text-slate-200 cursor-pointer"
-          >
-            <option value="all">Any Availability</option>
-            <option value="open_to_work">Available for Staff/Principal</option>
-            <option value="consulting">Open to Consulting</option>
-            <option value="focused">Focused on Current Work</option>
-          </select>
-        </div>
-
-        {/* Profiles Grid */}
-        {filteredProfiles.length === 0 ? (
+        ) : filteredProfiles.length === 0 ? (
           <div className="p-12 rounded-2xl border border-slate-800 bg-[#111827]/50 text-center space-y-3">
             <p className="text-base font-semibold text-slate-200">
-              No profiles found matching criteria
+              No profiles found matching search criteria
             </p>
             <p className="text-xs text-slate-400">
               Try searching for different keywords or clear current filters.
@@ -158,8 +186,8 @@ export const ExploreNetwork: React.FC<ExploreNetworkProps> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProfiles.map((prof) => {
-              const isFollowing = currentUser.followingUsernames.includes(prof.username);
-              const isSelf = currentUser.username === prof.username;
+              const isFollowing = currentUser ? currentUser.followingUsernames.includes(prof.username) : false;
+              const isSelf = currentUser ? currentUser.username === prof.username : false;
               const topSkill = prof.endorsements[0];
               const profTheme = THEMES[prof.themeId] || THEMES['obsidian-slate'];
 
@@ -233,7 +261,13 @@ export const ExploreNetwork: React.FC<ExploreNetworkProps> = ({
                         </div>
                         <button
                           type="button"
-                          onClick={() => onEndorseSkill(prof.username, topSkill.skill)}
+                          onClick={() => {
+                            if (!currentUser) {
+                              onOpenAuthModal();
+                              return;
+                            }
+                            onEndorseSkill(prof.username, topSkill.skill);
+                          }}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-xs font-mono text-blue-400 tabular-nums shrink-0 cursor-pointer"
                         >
                           <ThumbsUp className="w-3 h-3" />
@@ -248,7 +282,13 @@ export const ExploreNetwork: React.FC<ExploreNetworkProps> = ({
                       {!isSelf && (
                         <button
                           type="button"
-                          onClick={() => onToggleFollow(prof.username)}
+                          onClick={() => {
+                            if (!currentUser) {
+                              onOpenAuthModal();
+                              return;
+                            }
+                            onToggleFollow(prof.username);
+                          }}
                           className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer whitespace-nowrap ${
                             isFollowing
                               ? 'border-slate-700 bg-slate-800 text-slate-200'
@@ -271,7 +311,13 @@ export const ExploreNetwork: React.FC<ExploreNetworkProps> = ({
 
                       <button
                         type="button"
-                        onClick={() => handleFork(prof)}
+                        onClick={() => {
+                          if (!currentUser) {
+                            onOpenAuthModal();
+                            return;
+                          }
+                          handleFork(prof);
+                        }}
                         title="Fork section structure and theme into studio editor"
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-[#0B0F17] text-xs text-slate-300 hover:text-white cursor-pointer whitespace-nowrap"
                       >

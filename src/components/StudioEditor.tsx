@@ -19,6 +19,7 @@ import {
   Trash2,
   Type,
   User,
+  Lock,
 } from 'lucide-react';
 import {
   UserProfile,
@@ -35,16 +36,22 @@ import { MarkdownRenderer, compileProfileToStaticHtml } from '../lib/markdown';
 
 interface StudioEditorProps {
   profile: UserProfile;
-  onSaveProfile: (updated: UserProfile) => void;
+  currentUser: UserProfile | null;
+  authToken: string | null;
+  onSaveProfile: (updated: UserProfile) => Promise<void>;
   onViewLiveProfile: () => void;
   onOpenSsgModal: () => void;
+  onPromptAuth: () => void;
 }
 
 export const StudioEditor: React.FC<StudioEditorProps> = ({
   profile,
+  currentUser,
+  authToken,
   onSaveProfile,
   onViewLiveProfile,
   onOpenSsgModal,
+  onPromptAuth,
 }) => {
   const [draft, setDraft] = useState<UserProfile>(() => JSON.parse(JSON.stringify(profile)));
   const [selectedSectionId, setSelectedSectionId] = useState<string>(
@@ -53,7 +60,13 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
   const [activeStudioTab, setActiveStudioTab] = useState<'sections' | 'styles' | 'identity'>('sections');
   const [showAddSectionPicker, setShowAddSectionPicker] = useState(false);
   const [newTechInput, setNewTechInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const isOwner =
+    !!currentUser &&
+    currentUser.username.toLowerCase() === draft.username.toLowerCase();
 
   const sortedSections = [...draft.sections].sort((a, b) => a.order - b.order);
   const activeSection =
@@ -62,21 +75,34 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
   const activeTheme = THEMES[draft.themeId] || THEMES['obsidian-slate'];
   const activeFont = FONT_PAIRINGS[draft.fontPairingId] || FONT_PAIRINGS['jakarta-jetbrains'];
 
-  const handlePublishChanges = () => {
-    const htmlStr = compileProfileToStaticHtml(draft);
-    const sizeKb = Number((new Blob([htmlStr]).size / 1024).toFixed(1));
-    const randomHash = Math.random().toString(16).substring(2, 9);
-    const updated: UserProfile = {
-      ...draft,
-      sections: sortedSections.map((s, idx) => ({ ...s, order: idx })),
-      staticBundleSizeKb: sizeKb,
-      staticBuildHash: randomHash,
-      lastPublishedAt: new Date().toISOString(),
-    };
-    setDraft(updated);
-    onSaveProfile(updated);
-    setSaveFeedback(true);
-    setTimeout(() => setSaveFeedback(false), 2400);
+  const handlePublishChanges = async () => {
+    if (!isOwner) {
+      onPromptAuth();
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage('');
+    try {
+      const htmlStr = compileProfileToStaticHtml(draft);
+      const sizeKb = Number((new Blob([htmlStr]).size / 1024).toFixed(1));
+      const randomHash = Math.random().toString(16).substring(2, 9);
+      const updated: UserProfile = {
+        ...draft,
+        sections: sortedSections.map((s, idx) => ({ ...s, order: idx })),
+        staticBundleSizeKb: sizeKb,
+        staticBuildHash: randomHash,
+        lastPublishedAt: new Date().toISOString(),
+      };
+      setDraft(updated);
+      await onSaveProfile(updated);
+      setSaveFeedback(true);
+      setTimeout(() => setSaveFeedback(false), 2400);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to save profile. Ensure you are signed in.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const updateActiveSection = (patch: Partial<ProfileSection>) => {
@@ -141,7 +167,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
     const snippets: Record<string, string> = {
       h3: `\n\n### Sub-Architecture Focus\nTechnical breakdown and engineering outcomes.\n`,
       callout: `\n\n> [!NOTE]\n> Production verified specifications and SLAs.\n`,
-      table: `\n\n| Component | Technology | Target SLA |\n| :--- | :--- | :--- |\n| Core Engine | Rust / TypeScript | < 15 ms P99 |\n| Database | PostgreSQL 17 | 99.995% SLA |\n`,
+      table: `\n\n| Component | Technology | Target SLA |\n| :--- | :--- | :--- |\n| Core Engine | Rust / TypeScript | < 15 ms P99 |\n| Database | PostgreSQL 16 | 99.995% SLA |\n`,
       europass_job: `\n\n### Position Title · Company Name\n**Month Year – Present** · *City, Country · Industry Domain*\n\n- Quantifiable engineering achievement with measurable business impact.\n- Leadership of technical RFCs and production software architecture.\n`,
       code: `\n\n\`\`\`typescript\nexport async function verifySignature(hash: string): Promise<boolean> {\n  return hash.length === 64;\n}\n\`\`\`\n`,
     };
@@ -173,7 +199,32 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
 
   return (
     <div className="min-h-[calc(100vh-57px)] bg-[#0B0F17] text-slate-100 flex flex-col">
-      {/* Studio Top Action Bar */}
+      {/* Read-Only Ownership Warning */}
+      {!isOwner && (
+        <div className="bg-amber-950/80 border-b border-amber-700/80 px-6 py-2.5 text-xs text-amber-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Lock className="w-4 h-4 text-amber-400" />
+            <span>
+              <strong>Read-Only Mode:</strong> You are viewing @{draft.username}'s configuration. Each user can only edit and publish their own profile.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onPromptAuth}
+            className="px-3 py-1 rounded bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors cursor-pointer"
+          >
+            Sign in with GitHub
+          </button>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="bg-rose-950 border-b border-rose-800 px-6 py-2 text-xs text-rose-200">
+          {errorMessage}
+        </div>
+      )}
+
+      {/* Top Action Bar */}
       <div className="border-b border-slate-800 bg-[#0F172A] px-6 py-3">
         <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-1.5 p-1 bg-[#0B0F17] rounded-lg border border-slate-800">
@@ -243,8 +294,9 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
 
             <button
               type="button"
+              disabled={!isOwner || isSaving}
               onClick={handlePublishChanges}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white transition-colors cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-xs font-semibold text-white transition-colors cursor-pointer whitespace-nowrap"
             >
               {saveFeedback ? (
                 <>
@@ -254,7 +306,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
               ) : (
                 <>
                   <Save className="w-3.5 h-3.5" />
-                  <span>Publish Changes (SSG)</span>
+                  <span>{isSaving ? 'Saving...' : 'Publish Changes (SSG)'}</span>
                 </>
               )}
             </button>
@@ -264,11 +316,9 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
 
       {/* Editor & Preview Panes */}
       <div className="flex-1 max-w-[1440px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12">
-        {/* Controls Column */}
         <div className="lg:col-span-5 border-r border-slate-800 flex flex-col bg-[#0B0F17]">
           {activeStudioTab === 'sections' && (
             <div className="flex flex-col h-full">
-              {/* Section Selector */}
               <div className="p-4 border-b border-slate-800 bg-[#0F172A]/60">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -279,17 +329,19 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                       Select a section to write markdown or reorder blocks
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddSectionPicker(!showAddSectionPicker)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white cursor-pointer whitespace-nowrap"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Section</span>
-                  </button>
+                  {isOwner && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSectionPicker(!showAddSectionPicker)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white cursor-pointer whitespace-nowrap"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Section</span>
+                    </button>
+                  )}
                 </div>
 
-                {showAddSectionPicker && (
+                {showAddSectionPicker && isOwner && (
                   <div className="mb-3 p-3 rounded-lg bg-[#111827] border border-slate-700 space-y-2 max-h-64 overflow-y-auto">
                     <div className="text-xs font-semibold text-blue-400 mb-1">
                       Choose a standardized Europass / Markdown template:
@@ -334,57 +386,54 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveSection(sec.id, 'up')}
-                            disabled={idx === 0}
-                            title="Move section up"
-                            className="p-1 text-slate-400 hover:text-white disabled:opacity-30 cursor-pointer"
-                          >
-                            <ArrowUp className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveSection(sec.id, 'down')}
-                            disabled={idx === sortedSections.length - 1}
-                            title="Move section down"
-                            className="p-1 text-slate-400 hover:text-white disabled:opacity-30 cursor-pointer"
-                          >
-                            <ArrowDown className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setDraft((prev) => ({
-                                ...prev,
-                                sections: prev.sections.map((s) =>
-                                  s.id === sec.id ? { ...s, isVisible: !s.isVisible } : s
-                                ),
-                              }))
-                            }
-                            title={sec.isVisible ? 'Hide section' : 'Show section'}
-                            className="p-1 text-slate-400 hover:text-white cursor-pointer"
-                          >
-                            {sec.isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-amber-400" />}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSection(sec.id)}
-                            disabled={sortedSections.length <= 1}
-                            title="Delete section"
-                            className="p-1 text-slate-400 hover:text-rose-400 disabled:opacity-30 cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        {isOwner && (
+                          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveSection(sec.id, 'up')}
+                              disabled={idx === 0}
+                              className="p-1 text-slate-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveSection(sec.id, 'down')}
+                              disabled={idx === sortedSections.length - 1}
+                              className="p-1 text-slate-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDraft((prev) => ({
+                                  ...prev,
+                                  sections: prev.sections.map((s) =>
+                                    s.id === sec.id ? { ...s, isVisible: !s.isVisible } : s
+                                  ),
+                                }))
+                              }
+                              className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                            >
+                              {sec.isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-amber-400" />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSection(sec.id)}
+                              disabled={sortedSections.length <= 1}
+                              className="p-1 text-slate-400 hover:text-rose-400 disabled:opacity-30 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Section Editor */}
               {activeSection && (
                 <div className="p-5 flex-1 flex flex-col space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -394,9 +443,10 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                       </label>
                       <input
                         type="text"
+                        disabled={!isOwner}
                         value={activeSection.title}
                         onChange={(e) => updateActiveSection({ title: e.target.value })}
-                        className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white focus:outline-none focus:border-blue-500 disabled:opacity-60"
                       />
                     </div>
                     <div>
@@ -405,58 +455,59 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                       </label>
                       <input
                         type="text"
+                        disabled={!isOwner}
                         value={activeSection.subtitle || ''}
                         onChange={(e) => updateActiveSection({ subtitle: e.target.value })}
-                        className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-60"
                       />
                     </div>
                   </div>
 
-                  {/* Toolbar */}
-                  <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-lg bg-[#111827] border border-slate-800">
-                    <span className="text-[11px] font-mono text-slate-400 px-1.5">Insert:</span>
-                    <button
-                      type="button"
-                      onClick={() => handleInsertMarkdownSnippet('europass_job')}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer whitespace-nowrap"
-                    >
-                      <Sparkles className="w-3 h-3 text-blue-400" />
-                      <span>Europass Job</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleInsertMarkdownSnippet('table')}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer whitespace-nowrap"
-                    >
-                      <Table className="w-3 h-3 text-blue-400" />
-                      <span>Stack Table</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleInsertMarkdownSnippet('callout')}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer whitespace-nowrap"
-                    >
-                      <span>Alert [!NOTE]</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleInsertMarkdownSnippet('code')}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer whitespace-nowrap"
-                    >
-                      <Code className="w-3 h-3 text-blue-400" />
-                      <span>Code Block</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleInsertMarkdownSnippet('h3')}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer whitespace-nowrap"
-                    >
-                      <Heading2 className="w-3 h-3" />
-                      <span>Heading H3</span>
-                    </button>
-                  </div>
+                  {isOwner && (
+                    <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-lg bg-[#111827] border border-slate-800">
+                      <span className="text-[11px] font-mono text-slate-400 px-1.5">Insert:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleInsertMarkdownSnippet('europass_job')}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer whitespace-nowrap"
+                      >
+                        <Sparkles className="w-3 h-3 text-blue-400" />
+                        <span>Europass Job</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleInsertMarkdownSnippet('table')}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer whitespace-nowrap"
+                      >
+                        <Table className="w-3 h-3 text-blue-400" />
+                        <span>Stack Table</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleInsertMarkdownSnippet('callout')}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer whitespace-nowrap"
+                      >
+                        <span>Alert [!NOTE]</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleInsertMarkdownSnippet('code')}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer whitespace-nowrap"
+                      >
+                        <Code className="w-3 h-3 text-blue-400" />
+                        <span>Code Block</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleInsertMarkdownSnippet('h3')}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer whitespace-nowrap"
+                      >
+                        <Heading2 className="w-3 h-3" />
+                        <span>Heading H3</span>
+                      </button>
+                    </div>
+                  )}
 
-                  {/* Markdown Textarea */}
                   <div className="flex-1 flex flex-col">
                     <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1.5">
                       <span>Markdown Editor (GFM + Tables)</span>
@@ -466,10 +517,11 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                     </div>
                     <textarea
                       value={activeSection.content}
+                      disabled={!isOwner}
                       onChange={(e) => updateActiveSection({ content: e.target.value })}
                       rows={16}
                       spellCheck={false}
-                      className="w-full flex-1 p-4 rounded-xl bg-[#090D16] border border-slate-800 font-mono text-xs sm:text-sm text-slate-100 leading-relaxed focus:outline-none focus:border-blue-500 resize-y"
+                      className="w-full flex-1 p-4 rounded-xl bg-[#090D16] border border-slate-800 font-mono text-xs sm:text-sm text-slate-100 leading-relaxed focus:outline-none focus:border-blue-500 resize-y disabled:opacity-70"
                       placeholder="Write your experience, projects, or competence tables in Markdown..."
                     />
                   </div>
@@ -498,6 +550,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                       <button
                         key={themeItem.id}
                         type="button"
+                        disabled={!isOwner}
                         onClick={() =>
                           setDraft((prev) => ({ ...prev, themeId: themeItem.id as ThemeId }))
                         }
@@ -535,11 +588,11 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                 <div className="flex items-center gap-2 mb-1">
                   <Type className="w-4 h-4 text-blue-400" />
                   <h2 className="text-sm font-semibold text-white">
-                    Typography Pairings (2+1 Constitution)
+                    Typography Pairings
                   </h2>
                 </div>
                 <p className="text-xs text-slate-400 mb-3">
-                  Pair characterful display headings with readable body text and tabular monospace numerals
+                  Pair display headings with readable body text and tabular monospace numerals
                 </p>
 
                 <div className="space-y-2">
@@ -549,6 +602,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                       <button
                         key={fp.id}
                         type="button"
+                        disabled={!isOwner}
                         onClick={() =>
                           setDraft((prev) => ({
                             ...prev,
@@ -591,6 +645,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                       <button
                         key={l.id}
                         type="button"
+                        disabled={!isOwner}
                         onClick={() =>
                           setDraft((prev) => ({
                             ...prev,
@@ -622,6 +677,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                       <button
                         key={d.id}
                         type="button"
+                        disabled={!isOwner}
                         onClick={() =>
                           setDraft((prev) => ({
                             ...prev,
@@ -644,6 +700,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                   <label className="inline-flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer">
                     <input
                       type="checkbox"
+                      disabled={!isOwner}
                       checked={draft.showEuropassHeader}
                       onChange={(e) =>
                         setDraft((prev) => ({
@@ -659,6 +716,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                   <label className="inline-flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer">
                     <input
                       type="checkbox"
+                      disabled={!isOwner}
                       checked={draft.showTableOfContents}
                       onChange={(e) =>
                         setDraft((prev) => ({
@@ -685,6 +743,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                   <span className="text-xs font-mono text-slate-500">my.itstck.com/@</span>
                   <input
                     type="text"
+                    disabled={!isOwner}
                     value={draft.username}
                     onChange={(e) =>
                       setDraft((prev) => ({
@@ -692,7 +751,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                         username: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''),
                       }))
                     }
-                    className="bg-transparent text-xs font-mono text-blue-400 focus:outline-none flex-1"
+                    className="bg-transparent text-xs font-mono text-blue-400 focus:outline-none flex-1 disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -704,9 +763,10 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                   </label>
                   <input
                     type="text"
+                    disabled={!isOwner}
                     value={draft.displayName}
                     onChange={(e) => setDraft((prev) => ({ ...prev, displayName: e.target.value }))}
-                    className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white"
+                    className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white disabled:opacity-60"
                   />
                 </div>
                 <div>
@@ -714,6 +774,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                     Availability Status
                   </label>
                   <select
+                    disabled={!isOwner}
                     value={draft.availability}
                     onChange={(e) =>
                       setDraft((prev) => ({
@@ -721,7 +782,7 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                         availability: e.target.value as AvailabilityStatus,
                       }))
                     }
-                    className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white"
+                    className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white disabled:opacity-60"
                   >
                     <option value="open_to_work">Available for Staff / Principal Roles</option>
                     <option value="consulting">Open to Architecture Consulting</option>
@@ -737,9 +798,10 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                 </label>
                 <input
                   type="text"
+                  disabled={!isOwner}
                   value={draft.headline}
                   onChange={(e) => setDraft((prev) => ({ ...prev, headline: e.target.value }))}
-                  className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white"
+                  className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white disabled:opacity-60"
                 />
               </div>
 
@@ -749,9 +811,10 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                 </label>
                 <textarea
                   rows={3}
+                  disabled={!isOwner}
                   value={draft.bio}
                   onChange={(e) => setDraft((prev) => ({ ...prev, bio: e.target.value }))}
-                  className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white"
+                  className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white disabled:opacity-60"
                 />
               </div>
 
@@ -762,9 +825,10 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                   </label>
                   <input
                     type="text"
+                    disabled={!isOwner}
                     value={draft.company}
                     onChange={(e) => setDraft((prev) => ({ ...prev, company: e.target.value }))}
-                    className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white"
+                    className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white disabled:opacity-60"
                   />
                 </div>
                 <div>
@@ -773,51 +837,54 @@ export const StudioEditor: React.FC<StudioEditorProps> = ({
                   </label>
                   <input
                     type="text"
+                    disabled={!isOwner}
                     value={draft.location}
                     onChange={(e) => setDraft((prev) => ({ ...prev, location: e.target.value }))}
-                    className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white"
+                    className="w-full px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white disabled:opacity-60"
                   />
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800">
-                <label className="block text-xs font-semibold text-slate-200 mb-2">
-                  Primary IT Stack Technologies
-                </label>
-                <form onSubmit={handleAddStackItem} className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    value={newTechInput}
-                    onChange={(e) => setNewTechInput(e.target.value)}
-                    placeholder="Add technology (e.g. Rust, Kafka, eBPF)..."
-                    className="flex-1 px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white"
-                  />
-                  <button
-                    type="submit"
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white cursor-pointer"
-                  >
-                    Add
-                  </button>
-                </form>
-
-                <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-                  {draft.primaryStack.map((tech) => (
-                    <div
-                      key={tech}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#111827] border border-slate-800 text-slate-200"
+              {isOwner && (
+                <div className="pt-3 border-t border-slate-800">
+                  <label className="block text-xs font-semibold text-slate-200 mb-2">
+                    Primary IT Stack Technologies
+                  </label>
+                  <form onSubmit={handleAddStackItem} className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={newTechInput}
+                      onChange={(e) => setNewTechInput(e.target.value)}
+                      placeholder="Add technology (e.g. Rust, Kafka, eBPF)..."
+                      className="flex-1 px-3 py-1.5 rounded-lg bg-[#111827] border border-slate-800 text-xs text-white"
+                    />
+                    <button
+                      type="submit"
+                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white cursor-pointer"
                     >
-                      <span>{tech}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveStackItem(tech)}
-                        className="text-slate-500 hover:text-rose-400 cursor-pointer"
+                      Add
+                    </button>
+                  </form>
+
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                    {draft.primaryStack.map((tech) => (
+                      <div
+                        key={tech}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#111827] border border-slate-800 text-slate-200"
                       >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                        <span>{tech}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveStackItem(tech)}
+                          className="text-slate-500 hover:text-rose-400 cursor-pointer"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>

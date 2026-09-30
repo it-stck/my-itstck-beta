@@ -27,7 +27,7 @@ import { ResilientImage } from './ResilientImage';
 
 interface StaticProfileViewProps {
   profile: UserProfile;
-  currentUser: UserProfile;
+  currentUser: UserProfile | null;
   isOwnProfile: boolean;
   routeFormat: 'at' | 'u';
   onToggleRouteFormat: (fmt: 'at' | 'u') => void;
@@ -39,6 +39,7 @@ interface StaticProfileViewProps {
   onAddRecommendation: (targetUsername: string, relation: string, content: string) => void;
   onQuickThemePreview?: (themeId: ThemeId, fontId: FontPairingId, layoutMode: LayoutMode) => void;
   onSelectProfile: (username: string) => void;
+  onPromptAuth?: () => void;
 }
 
 export const StaticProfileView: React.FC<StaticProfileViewProps> = ({
@@ -55,6 +56,7 @@ export const StaticProfileView: React.FC<StaticProfileViewProps> = ({
   onAddRecommendation,
   onQuickThemePreview,
   onSelectProfile,
+  onPromptAuth,
 }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [showRecForm, setShowRecForm] = useState(false);
@@ -74,7 +76,9 @@ export const StaticProfileView: React.FC<StaticProfileViewProps> = ({
       ? `https://my.itstck.com/@${profile.username}`
       : `https://my.itstck.com/u/${profile.username}`;
 
-  const isFollowing = currentUser.followingUsernames.includes(profile.username);
+  const isFollowing = currentUser
+    ? currentUser.followingUsernames.includes(profile.username)
+    : false;
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(canonicalUrl);
@@ -94,6 +98,10 @@ export const StaticProfileView: React.FC<StaticProfileViewProps> = ({
   };
 
   const handleForkClick = () => {
+    if (!currentUser) {
+      onPromptAuth?.();
+      return;
+    }
     onForkTemplate(profile);
     setForkConfirmed(true);
     setTimeout(() => setForkConfirmed(false), 2500);
@@ -377,7 +385,13 @@ export const StaticProfileView: React.FC<StaticProfileViewProps> = ({
               {!isOwnProfile && (
                 <button
                   type="button"
-                  onClick={() => onToggleFollow(profile.username)}
+                  onClick={() => {
+                    if (!currentUser) {
+                      onPromptAuth?.();
+                      return;
+                    }
+                    onToggleFollow(profile.username);
+                  }}
                   style={{
                     backgroundColor: isFollowing ? theme.bgSurface : theme.accentPrimary,
                     color: isFollowing ? theme.textPrimary : '#FFFFFF',
@@ -517,7 +531,9 @@ export const StaticProfileView: React.FC<StaticProfileViewProps> = ({
 
                 <div className="space-y-2.5">
                   {profile.endorsements.map((item) => {
-                    const hasEndorsed = item.endorsedByUsernames.includes(currentUser.username);
+                    const hasEndorsed = currentUser
+                      ? item.endorsedByUsernames.includes(currentUser.username)
+                      : false;
                     return (
                       <div
                         key={item.skill}
@@ -537,7 +553,13 @@ export const StaticProfileView: React.FC<StaticProfileViewProps> = ({
                         </div>
                         <button
                           type="button"
-                          onClick={() => onEndorseSkill(profile.username, item.skill)}
+                          onClick={() => {
+                            if (!currentUser) {
+                              onPromptAuth?.();
+                              return;
+                            }
+                            onEndorseSkill(profile.username, item.skill);
+                          }}
                           style={{
                             borderColor: hasEndorsed ? theme.accentPrimary : theme.borderSubtle,
                             color: hasEndorsed ? theme.accentText : theme.textSecondary,
@@ -568,7 +590,13 @@ export const StaticProfileView: React.FC<StaticProfileViewProps> = ({
                   </h2>
                   <button
                     type="button"
-                    onClick={() => setShowRecForm(!showRecForm)}
+                    onClick={() => {
+                      if (!currentUser) {
+                        onPromptAuth?.();
+                        return;
+                      }
+                      setShowRecForm(!showRecForm);
+                    }}
                     style={{ color: theme.accentText }}
                     className="no-print inline-flex items-center gap-1 text-xs font-medium hover:underline cursor-pointer"
                   >
@@ -606,7 +634,7 @@ export const StaticProfileView: React.FC<StaticProfileViewProps> = ({
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1" style={{ color: theme.textSecondary }}>
-                        Verified Recommendation as @{currentUser.username}
+                        Verified Recommendation as @{currentUser?.username || 'developer'}
                       </label>
                       <textarea
                         rows={3}
